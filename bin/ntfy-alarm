@@ -1,0 +1,47 @@
+#!/bin/bash
+# ntfy-alarm : alarme qui sonne en boucle sur le telephone via un serveur ntfy (auto-heberge ou ntfy.sh).
+# Usage : ntfy-alarm "YYYY-MM-DD HH:MM" "Titre" ["message"]   (heure du fuseau ALARM_TZ)
+#         ntfy-alarm now "Titre" ["message"]
+#         ntfy-alarm cancel <id>          (annule une alarme programmee pas encore sonnee, et son pre-avis)
+# Toute alarme datee est precedee d'un PRE-AVIS SILENCIEUX 2 h avant (priorite 2 : ni son ni vibration),
+# publie sous l'id "<id>-pre" pour etre annule avec l'alarme.
+# Si l'alarme tombe dans moins de 2 h, le pre-avis part tout de suite (sauf "now").
+# Reglages : fichier ${NTFY_ALARM_ENV:-~/.config/ntfy-alarm/ntfy.env}
+#   NTFY_URL, NTFY_TOPIC, NTFY_TOKEN (facultatif si le serveur est ouvert), ALARM_TZ (defaut UTC),
+#   ALARM_REGISTRE (defaut ~/.local/share/ntfy-alarm/alarms.jsonl)
+set -euo pipefail
+ENV=${NTFY_ALARM_ENV:-$HOME/.config/ntfy-alarm/ntfy.env}
+[ -f "$ENV" ] || { echo "fichier de reglages introuvable: $ENV (modele: ntfy.env.example)" >&2; exit 1; }
+. "$ENV"
+: "${NTFY_URL:?NTFY_URL manquant}" "${NTFY_TOPIC:?NTFY_TOPIC manquant}"
+TZ_ALARME=${ALARM_TZ:-UTC}
+REG=${ALARM_REGISTRE:-$HOME/.local/share/ntfy-alarm/alarms.jsonl}
+AUTH=(); [ -n "${NTFY_TOKEN:-}" ] && AUTH=(-H "Authorization: Bearer $NTFY_TOKEN")
+mkdir -p "$(dirname "$REG")"
+if [ "${1:-}" = cancel ]; then
+  [ -n "${2:-}" ] || { echo "usage: ntfy-alarm cancel <id>" >&2; exit 1; }
+  curl -sf -o /dev/null -w "annulee: %{http_code}\n" -X DELETE "${AUTH[@]}" "$NTFY_URL/$NTFY_TOPIC/$2"
+  curl -s -o /dev/null -X DELETE "${AUTH[@]}" "$NTFY_URL/$NTFY_TOPIC/$2-pre" || true
+  python3 -c 'import json,sys,time;print(json.dumps({"op":"cancel","id":sys.argv[1],"at":int(time.time())}))' "$2" >> "$REG"
+  exit
+fi
+[ $# -ge 2 ] || { sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 1; }
+WHEN=$1; TITLE=$2; MSG=${3:-$2}
+H=(); TS=$(date +%s)
+if [ "$WHEN" != now ]; then
+  TS=$(TZ=$TZ_ALARME date -d "$WHEN" +%s) || { echo "date invalide: $WHEN" >&2; exit 1; }
+  [ "$TS" -gt "$(date +%s)" ] || { echo "date dans le passe: $WHEN" >&2; exit 1; }
+  H=(-H "At: $TS")
+fi
+OUT=$(curl -sf "${AUTH[@]}" -H "Title: $TITLE" -H "Priority: 5" -H "Tags: alarm_clock" "${H[@]}" -d "$MSG" "$NTFY_URL/$NTFY_TOPIC")
+ID=$(echo "$OUT" | grep -oE '"id":"[^"]+"' | cut -d'"' -f4)
+python3 -c 'import json,sys,time;print(json.dumps({"op":"create","id":sys.argv[1],"time":int(sys.argv[2]),"title":sys.argv[3],"msg":sys.argv[4],"source":"ntfy-alarm","at":int(time.time())},ensure_ascii=False))' "$ID" "$TS" "$TITLE" "$MSG" >> "$REG"
+PRE_AVANCE=7200
+if [ "$WHEN" != now ]; then
+  PRE=$((TS - PRE_AVANCE)); PH=()
+  [ "$PRE" -gt "$(( $(date +%s) + 10 ))" ] && PH=(-H "At: $PRE")
+  HHMM=$(TZ=$TZ_ALARME date -d @$TS +%H:%M)
+  curl -sf -o /dev/null "${AUTH[@]}" -H "Title: A $HHMM : $TITLE" -H "Priority: 2" -H "Tags: hourglass" "${PH[@]}" \
+    -d "Alarme a $HHMM : $MSG" "$NTFY_URL/$NTFY_TOPIC/$ID-pre" && echo "pre-avis silencieux: $(TZ=$TZ_ALARME date -d @$(( PRE > $(date +%s) ? PRE : $(date +%s) )) '+%Y-%m-%d %H:%M')"
+fi
+echo "\"id\":\"$ID\" \"time\":$TS ($(TZ=$TZ_ALARME date -d @$TS '+%Y-%m-%d %H:%M'))"

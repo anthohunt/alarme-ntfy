@@ -1,0 +1,4 @@
+server/cache/
+server/lib/
+*.db
+ntfy.env

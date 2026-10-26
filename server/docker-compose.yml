@@ -1,0 +1,16 @@
+# Serveur ntfy auto-heberge. Lancer : docker compose up -d
+# Puis creer un compte et un jeton (voir README) ; placer un reverse proxy HTTPS devant le port 8080.
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    command: serve
+    restart: unless-stopped
+    environment:
+      TZ: UTC
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./etc:/etc/ntfy
+      - ./cache:/var/cache/ntfy
+      - ./lib:/var/lib/ntfy

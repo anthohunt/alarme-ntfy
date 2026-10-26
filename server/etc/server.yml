@@ -1,0 +1,8 @@
+base-url: "https://ntfy.example.org"   # a remplacer par votre adresse publique
+behind-proxy: true
+cache-file: "/var/cache/ntfy/cache.db"
+cache-duration: "12h"
+message-delay-limit: "8760h"           # permet de programmer une alarme jusqu'a un an a l'avance
+auth-file: "/var/lib/ntfy/user.db"
+auth-default-access: "deny-all"
+upstream-base-url: "https://ntfy.sh"   # relais iOS ; retirer si inutile
