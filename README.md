@@ -1,42 +1,46 @@
+**English** · [Français](README.fr.md)
+
 # alarme-ntfy
 
-Une alarme qui **sonne en boucle sur votre téléphone** à l'heure dite, posée depuis un terminal ou par un agent (Claude Code, script, tâche planifiée). Elle passe par [ntfy](https://ntfy.sh) (serveur auto-hébergé ou `ntfy.sh`), donc par Internet seulement : pas de VPN, pas d'accès SSH au téléphone.
+An alarm that **rings in a loop on your phone** at the set time, scheduled from a terminal or by an agent (Claude Code, script, scheduled task). It goes through [ntfy](https://ntfy.sh) (self-hosted server or `ntfy.sh`), so over the Internet only: no VPN, no SSH access to the phone.
 
-## Ce que contient le dépôt
-• `bin/ntfy-alarm` : la commande (bash + curl + python3). Pose, annule, tient un registre `alarms.jsonl`.
-• `server/` : un `docker-compose.yml` et un `server.yml` pour héberger votre propre serveur ntfy (accès privé).
-• `skill/SKILL.md` : un skill pour Claude Code qui apprend à l'agent à poser l'alarme.
-• `ntfy.env.example` : le modèle de réglages.
+## What is in the repository
+- `bin/ntfy-alarm`: the command (bash + curl + python3). Sets and cancels alarms, keeps an `alarms.jsonl` log.
+- `server/`: a `docker-compose.yml` and a `server.yml` to host your own ntfy server (private access).
+- `skill/SKILL.md`: a Claude Code skill that teaches the agent to set the alarm.
+- `ntfy.env.example`: the settings template.
 
-Pré-avis : toute alarme datée est précédée d'une notification silencieuse deux heures avant (priorité 2).
+Early notice: every dated alarm is preceded by a silent notification two hours before (priority 2).
 
-## Installer
-1. **Serveur** (ou utilisez `https://ntfy.sh` avec un sujet long et secret) :
+The command's messages and the skill are in French.
+
+## Install
+1. **Server** (or use `https://ntfy.sh` with a long, secret topic):
    ```
    cd server && docker compose up -d
-   docker exec -it ntfy ntfy user add --role=admin moi
-   docker exec -it ntfy ntfy token add moi        # note le jeton tk_...
+   docker exec -it ntfy ntfy user add --role=admin me
+   docker exec -it ntfy ntfy token add me        # note the tk_... token
    ```
-   Mettez un reverse proxy HTTPS devant le port 8080 et adaptez `base-url` dans `server/etc/server.yml`.
-2. **Téléphone** : installez l'application ntfy, ajoutez votre serveur, abonnez-vous au sujet (par exemple `Alarms`, la casse compte) et, dans les réglages de l'app, gardez les notifications de priorité maximale.
-3. **Commande** :
+   Put an HTTPS reverse proxy in front of port 8080 and adapt `base-url` in `server/etc/server.yml`.
+2. **Phone**: install the ntfy app, add your server, subscribe to the topic (for example `Alarms`, case matters) and, in the app settings, keep maximum-priority notifications on.
+3. **Command**:
    ```
    sudo install -m 755 bin/ntfy-alarm /usr/local/bin/ntfy-alarm
    mkdir -p ~/.config/ntfy-alarm && cp ntfy.env.example ~/.config/ntfy-alarm/ntfy.env && chmod 600 ~/.config/ntfy-alarm/ntfy.env
    ```
-   puis éditez `ntfy.env` (adresse, sujet, jeton, fuseau).
-4. **Essai** : `ntfy-alarm now "Test" "ça sonne ?"`
+   then edit `ntfy.env` (address, topic, token, time zone).
+4. **Try it**: `ntfy-alarm now "Test" "does it ring?"`
 
-## Utiliser
+## Usage
 ```
-ntfy-alarm "2027-01-15 07:30" "Réveil" "Départ à 8h"
-ntfy-alarm now "Titre" "Message"
+ntfy-alarm "2027-01-15 07:30" "Wake up" "Leaving at 8"
+ntfy-alarm now "Title" "Message"
 ntfy-alarm cancel <id>
 ```
-L'heure est lue dans le fuseau `ALARM_TZ`. La commande affiche l'identifiant de l'alarme ; elle refuse une date invalide ou passée.
+The time is read in the `ALARM_TZ` time zone. The command prints the alarm's identifier; it refuses an invalid or past date.
 
-## Avec Claude Code
-Copiez `skill/SKILL.md` dans `~/.claude/skills/alarm/SKILL.md`.
+## With Claude Code
+Copy `skill/SKILL.md` to `~/.claude/skills/alarm/SKILL.md`.
 
-## Licences
-Code : Apache 2.0 (`LICENSE`, `NOTICE`). Texte : CC BY 4.0 (`LICENSE-docs`). ntfy lui-même (Apache 2.0 / GPL 2.0) est utilisé comme programme séparé, non redistribué ici.
+## Licenses
+Code: Apache 2.0 (`LICENSE`, `NOTICE`). Text: CC BY 4.0 (`LICENSE-docs`). ntfy itself (Apache 2.0 / GPL 2.0) is used as a separate program, not redistributed here.
