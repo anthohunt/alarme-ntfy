@@ -1,5 +1,7 @@
 **English** · [Français](README.fr.md)
 
+**Anthony Hunt** · [ingevision.cloud](https://ingevision.cloud/?lang=en) · [LinkedIn](https://www.linkedin.com/in/anthony-hunt-3948a9196) · [GitHub profile](https://github.com/anthohunt)
+
 # alarme-ntfy
 
 An alarm that **rings in a loop on your phone** at the set time, scheduled from a terminal or by an agent (Claude Code, script, scheduled task). It goes through [ntfy](https://ntfy.sh) (self-hosted server or `ntfy.sh`), so over the Internet only: no VPN, no SSH access to the phone.

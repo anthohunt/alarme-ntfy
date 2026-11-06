@@ -1,5 +1,7 @@
 [English](README.md) · **Français**
 
+**Anthony Hunt** · [ingevision.cloud](https://ingevision.cloud/) · [LinkedIn](https://www.linkedin.com/in/anthony-hunt-3948a9196) · [Profil GitHub](https://github.com/anthohunt)
+
 # alarme-ntfy
 
 Une alarme qui **sonne en boucle sur votre téléphone** à l'heure dite, posée depuis un terminal ou par un agent (Claude Code, script, tâche planifiée). Elle passe par [ntfy](https://ntfy.sh) (serveur auto-hébergé ou `ntfy.sh`), donc par Internet seulement : pas de VPN, pas d'accès SSH au téléphone.
